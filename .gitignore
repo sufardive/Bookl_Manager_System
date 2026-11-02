@@ -1,0 +1,39 @@
+## Visual Studio / .NET Framework
+.vs/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ll]og/
+[Ll]ogs/
+
+## 用户级与 IDE 缓存文件
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*.DotSettings.user
+.vscode/
+.idea/
+
+## NuGet
+packages/
+*.nupkg
+*.nuget.props
+*.nuget.targets
+
+## 生成产物与测试
+[Tt]est[Rr]esult*/
+*.dll
+*.pdb
+*.cache
+*.exe
+
+## 系统文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
