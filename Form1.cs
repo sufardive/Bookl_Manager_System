@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -12,11 +14,16 @@ namespace Bookl_Manager_System
 {
     public partial class Form1 : Form
     {
+
+
+        TcpListener tcpListener;
+
         List<Books> bookList = new List<Books>();
 
         public Form1()
         {
             InitializeComponent();
+            OnmsgReceived += ShowReceived;
             var book1 = new Books();
             book1.bookId = 1;
             book1.bookName = "C#图解教程";
@@ -40,6 +47,12 @@ namespace Bookl_Manager_System
             // 启动时直接显示在表格上
             dataGridView1.DataSource = bookList;
         }
+        public string ShowReceived(string msg)
+        {
+            MessageBox.Show(msg);
+            return "";
+        }
+
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -106,6 +119,35 @@ namespace Bookl_Manager_System
             dataGridView1.DataSource = null;
             dataGridView1.DataSource = seacrList;
         }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            tcpListener =  new TcpListener(IPAddress.Any, 8888);
+            tcpListener.Start();
+            MessageBox.Show("you have a connected");
+            Task.Run(() => {
+                var client  = tcpListener.AcceptTcpClient();
+                MessageBox.Show("you have a accepted");
+                var stream = client.GetStream();
+                byte[] buffer = new byte[1024];
+                while (true)
+                {
+                    int len = stream.Read(buffer, 0, buffer.Length);
+                    if (len == 0) break;
+                    msg = Encoding.UTF8.GetString(buffer, 0, len);
+                    OnmsgReceived?.Invoke(msg);
+                }
+
+            } );
+
+            
+        }
+
+        public string msg;
+        public delegate string MsgHandler(string msg);
+        public event MsgHandler OnmsgReceived;
+
+
     }
 
     public class Books
@@ -114,6 +156,5 @@ namespace Bookl_Manager_System
         public string bookName { get; set; }
         public double price { get; set; }
     }
-
 
 }
