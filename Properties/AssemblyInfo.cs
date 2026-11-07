@@ -1,6 +1,11 @@
 ﻿using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
+
+// 由于项目设置了 GenerateAssemblyInfo=false（保留本文件），
+// 需手动声明目标平台，否则 WinForms API 会触发 CA1416 警告。
+[assembly: SupportedOSPlatform("windows7.0")]
 
 // 有关程序集的一般信息由以下
 // 控制。更改这些特性值可修改

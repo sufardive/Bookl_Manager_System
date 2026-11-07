@@ -120,29 +120,70 @@ namespace Bookl_Manager_System
             dataGridView1.DataSource = seacrList;
         }
 
-        private void button6_Click(object sender, EventArgs e)
+        private async void button6_Click(object sender, EventArgs e)
         {
-            tcpListener =  new TcpListener(IPAddress.Any, 8888);
-            tcpListener.Start();
-            MessageBox.Show("you have a connected");
-            Task.Run(() => {
-                var client  = tcpListener.AcceptTcpClient();
-                MessageBox.Show("you have a accepted");
-                var stream = client.GetStream();
-                byte[] buffer = new byte[1024];
-                while (true)
+            while (true)
+            {
+
+                try
                 {
-                    int len = stream.Read(buffer, 0, buffer.Length);
-                    if (len == 0) break;
-                    msg = Encoding.UTF8.GetString(buffer, 0, len);
-                    OnmsgReceived?.Invoke(msg);
+                    //先获得终结点
+                    var ipAdress = IPAddress.Parse("127.0.0.1");
+                    var ipEndPoint = new IPEndPoint(ipAdress, 8888);
+                    //创建新的client
+                    using TcpClient tcpClient = new();
+                    //然后连接终结点
+                    await tcpClient.ConnectAsync(ipEndPoint);
+                    //将连接建立流
+
+                    await using NetworkStream stream = tcpClient.GetStream();
+                    //读取流的信息存进buffer
+
+                    var buffer = new byte[1024];
+                    while (true)
+                    {
+
+                        var received = await stream.ReadAsync(buffer);
+                        if (received == 0)
+                        {
+                            break;
+                        }
+                        //格式化流
+                        var msg = Encoding.UTF8.GetString(buffer, 0, received);
+                        MessageBox.Show(msg);
+                    }
                 }
+                catch (Exception)
+                {
 
-            } );
+                }
+                await Task.Delay(3000);
+                /*
+                if(tcpListener != null)
+                {
+                    MessageBox.Show("TCP已连接，请不要重复连接");
+                    return;
+                }
+                tcpListener =  new TcpListener(IPAddress.Any, 8888);
+                tcpListener.Start();
+                MessageBox.Show("you have a connected");
+                Task.Run(() => {
+                    var client  = tcpListener.AcceptTcpClient();
+                    MessageBox.Show("you have a accepted");
+                    var stream = client.GetStream();
+                    byte[] buffer = new byte[1024];
+                    while (true)
+                    {
+                        int len = stream.Read(buffer, 0, buffer.Length);
+                        if (len == 0) break;
+                        msg = Encoding.UTF8.GetString(buffer, 0, len);
+                        OnmsgReceived?.Invoke(msg);
+                    }
 
-            
+                }
+                );*/
+            }
         }
-
         public string msg;
         public delegate string MsgHandler(string msg);
         public event MsgHandler OnmsgReceived;

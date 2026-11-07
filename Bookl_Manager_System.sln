@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36811.4 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Bookl_Manager_System", "Bookl_Manager_System.csproj", "{436081F1-4A65-499B-B1D8-75F2E873BAE3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bookl_Manager_System", "Bookl_Manager_System.csproj", "{436081F1-4A65-499B-B1D8-75F2E873BAE3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
