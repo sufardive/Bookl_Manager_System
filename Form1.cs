@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -119,27 +120,91 @@ namespace Bookl_Manager_System
             dataGridView1.DataSource = null;
             dataGridView1.DataSource = seacrList;
         }
+        private Task _tcpTask;
 
+        private CancellationTokenSource _cts;
         private async void button6_Click(object sender, EventArgs e)
         {
-            while (true)
+            // 1. 检查有没有在跑，如果在跑，就发停止信号并退出。
+            if(_cts != null)
             {
-
+                _cts.Cancel();
+                _cts.Dispose();
+                _cts = null;
+                button6.Text = "启动TCP连接";
+                return;
+            }
+            // 2. 如果没在跑，创建一个取消令牌，修改按钮文字。
+            _cts = new();
+            var token = _cts.Token;
+            button6.Text = "停止TCP连接";
+            // 3. 开启后台 Task.Run：
+            // 【这部分是脚手架，永远只管复制，绝不手敲】
+            var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888);
+            Task.Run(async () =>
+            {
+            while (!_cts.IsCancellationRequested)
+            {
                 try
                 {
-                    //先获得终结点
-                    var ipAdress = IPAddress.Parse("127.0.0.1");
-                    var ipEndPoint = new IPEndPoint(ipAdress, 8888);
-                    //创建新的client
-                    using TcpClient tcpClient = new();
-                    //然后连接终结点
-                    await tcpClient.ConnectAsync(ipEndPoint);
-                    //将连接建立流
+                    using (TcpClient tcpClient = new TcpClient())
+                    {
+                        await tcpClient.ConnectAsync(ipEndPoint);
+                        await using NetworkStream stream = tcpClient.GetStream();
+                        var buffer = new byte[1024];
+                        while (true)
+                        {
+                            var received = await stream.ReadAsync(buffer,token);
+                            if (received == 0) break;
 
-                    await using NetworkStream stream = tcpClient.GetStream();
-                    //读取流的信息存进buffer
+                            var msg = Encoding.UTF8.GetString(buffer, 0, received);
+                            string[] parts = msg.Split(",");
+                            if (parts.Length == 2)
+                            {
+                                var title = parts[0];
+                                var price = double.Parse(parts[1]);
+                                var bookId = bookList.Max(b => b.bookId) + 1;
+                                var book = new Books { bookId = bookId, bookName = title, price = price };
+                                this.Invoke(new Action(() => {
+                                    bookList.Add(book);
+                                    dataGridView1.DataSource = null;
+                                    dataGridView1.DataSource = bookList;
+                                }));
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+                    await Task.Delay(3000);
+                }
+            });
+        
+        }
 
-                    var buffer = new byte[1024];
+        /*while (true)
+        {
+
+            try
+            {
+                //先获得终结点
+                var ipAdress = IPAddress.Parse("127.0.0.1");
+                var ipEndPoint = new IPEndPoint(ipAdress, 8888);
+                //创建新的client
+                if (_tcpTask != null && !_tcpTask.IsCompleted)
+                {
+                    return;
+                }
+                using TcpClient tcpClient = new();
+                //然后连接终结点
+                await tcpClient.ConnectAsync(ipEndPoint);
+                //将连接建立流
+
+                await using NetworkStream stream = tcpClient.GetStream();
+                //读取流的信息存进buffer
+
+                var buffer = new byte[1024];
+                _tcpTask = Task.Run(async () =>
+                {
                     while (true)
                     {
 
@@ -152,38 +217,38 @@ namespace Bookl_Manager_System
                         var msg = Encoding.UTF8.GetString(buffer, 0, received);
                         MessageBox.Show(msg);
                     }
-                }
-                catch (Exception)
-                {
-
-                }
-                await Task.Delay(3000);
-                /*
-                if(tcpListener != null)
-                {
-                    MessageBox.Show("TCP已连接，请不要重复连接");
-                    return;
-                }
-                tcpListener =  new TcpListener(IPAddress.Any, 8888);
-                tcpListener.Start();
-                MessageBox.Show("you have a connected");
-                Task.Run(() => {
-                    var client  = tcpListener.AcceptTcpClient();
-                    MessageBox.Show("you have a accepted");
-                    var stream = client.GetStream();
-                    byte[] buffer = new byte[1024];
-                    while (true)
-                    {
-                        int len = stream.Read(buffer, 0, buffer.Length);
-                        if (len == 0) break;
-                        msg = Encoding.UTF8.GetString(buffer, 0, len);
-                        OnmsgReceived?.Invoke(msg);
-                    }
-
-                }
-                );*/
+                });
             }
+            catch (Exception)
+            {
+
+            }
+            await Task.Delay(3000);
+            if(tcpListener != null)
+            {
+                MessageBox.Show("TCP已连接，请不要重复连接");
+                return;
+            }
+            tcpListener =  new TcpListener(IPAddress.Any, 8888);
+            tcpListener.Start();
+            MessageBox.Show("you have a connected");
+            Task.Run(() => {
+                var client  = tcpListener.AcceptTcpClient();
+                MessageBox.Show("you have a accepted");
+                var stream = client.GetStream();
+                byte[] buffer = new byte[1024];
+                while (true)
+                {
+                    int len = stream.Read(buffer, 0, buffer.Length);
+                    if (len == 0) break;
+                    msg = Encoding.UTF8.GetString(buffer, 0, len);
+                    OnmsgReceived?.Invoke(msg);
+                }
+
+            }
+            );
         }
+    }*/
         public string msg;
         public delegate string MsgHandler(string msg);
         public event MsgHandler OnmsgReceived;
