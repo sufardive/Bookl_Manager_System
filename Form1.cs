@@ -10,43 +10,25 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Bookl_Manager_System.Models;
+using Bookl_Manager_System.Services;
+
 
 namespace Bookl_Manager_System
 {
     public partial class Form1 : Form
     {
-
-
-        TcpListener tcpListener;
-
-        List<Books> bookList = new List<Books>();
+        private BookService bookService = new BookService();
+        public string msg;
+        public delegate string MsgHandler(string msg);
+        public event MsgHandler OnmsgReceived;
 
         public Form1()
         {
             InitializeComponent();
             OnmsgReceived += ShowReceived;
-            var book1 = new Books();
-            book1.bookId = 1;
-            book1.bookName = "C#图解教程";
-            book1.price = 35.2;
-
-            var book2 = new Books();
-            book2.bookId = 2;
-            book2.bookName = "Sql必知必会";
-            book2.price = 37.1;
-
-            var book3 = new Books();
-            book3.bookId = 3;
-            book3.bookName = "深入理解计算机系统";
-            book3.price = 99.0;
-
-            // 装进列表
-            bookList.Add(book1);
-            bookList.Add(book2);
-            bookList.Add(book3);
-
-            // 启动时直接显示在表格上
-            dataGridView1.DataSource = bookList;
+            InitializeBooks();
+            RefreshDataGridView();
         }
         public string ShowReceived(string msg)
         {
@@ -54,122 +36,138 @@ namespace Bookl_Manager_System
             return "";
         }
 
-
-        private void button1_Click(object sender, EventArgs e)
+        public void InitializeBooks()
         {
-            var book1 = new Books();
-            book1.bookId = 1;
-            book1.bookName = "C#图解教程";
-            book1.price = 35.2;
-            var book2 = new Books();
-            book2.bookId = 2;
-            book2.bookName = "Sql必知必会";
-            book2.price = 37.1;
-            bookList.Add(book1);
-            bookList.Add(book2);
-            dataGridView1.DataSource = bookList;
-        }
-
-        private void button2_Click(object sender, EventArgs e)
-        {
-            var book = new Books();
-            book.bookId = bookList.Count + 1;
-            if (textBox1.Text == "" || textBox2.Text == "") return;
-            book.bookName = textBox1.Text;
-            book.price = Convert.ToDouble(textBox2.Text);
-            bookList.Add(book);
-            dataGridView1.DataSource = null;
-            dataGridView1.DataSource = bookList;
-        }
-
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (bookList.Count == 0) return;
-            var index = dataGridView1.CurrentRow.Index;
-            bookList.RemoveAt(index);
-            dataGridView1.DataSource = null;
-            dataGridView1.DataSource = bookList;
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            var book = new Books();
-            if (textBox1.Text == "" || textBox2.Text == "") return;
-            var index = dataGridView1.CurrentRow.Index;
-            book = bookList[index];
-            book.bookName = textBox1.Text;
-            book.price = Convert.ToDouble(textBox2.Text);
-            bookList[index] = book;
-            dataGridView1.DataSource = null;
-            dataGridView1.DataSource = bookList;
-        }
-
-        private void button5_Click(object sender, EventArgs e)
-        {
-            List<Books> seacrList = new List<Books>();
-            int count = bookList.Count;
-            var id = int.Parse(textBox3.Text);
-            if(id > count)
+            bookService.AddBook(new Books
             {
-                MessageBox.Show("id不存在");
+                bookName = "C#图解教程",
+                price = 35.2
+            });
+
+            bookService.AddBook(new Books
+            {
+                bookName = "Sql必知必会",
+                price = 37.1
+            });
+
+            bookService.AddBook(new Books
+            {
+                bookName = "深入理解计算机系统",
+                price = 99.0
+            });
+        }
+
+        public void RefreshDataGridView()
+        {
+            var bookList = bookService.GetBooks();
+            // 启动时直接显示在表格上
+            dataGridView1.DataSource = null;
+            dataGridView1.DataSource = bookList;
+        }
+
+
+        private void BtnAddBook_Click(object sender, EventArgs e)
+        {
+            var book = new Books();
+            if (boxTitle.Text == "" || boxPrice.Text == "") return;
+            book.bookName = boxTitle.Text;
+            book.price = Convert.ToDouble(boxPrice.Text);
+            bookService.AddBook(book);
+            RefreshDataGridView();
+        }
+
+
+        private void BtnDeleteBook_Click(object sender, EventArgs e)
+        {
+            if (bookService.GetBooks().Count == 0) return;
+            var book = dataGridView1.CurrentRow.DataBoundItem as Books;
+            int id = book.bookId;
+            bookService.RemoveBook(id);
+            RefreshDataGridView();
+        }
+
+        private void BtnUpdateBook_Click(object sender, EventArgs e)
+        {
+            if (boxTitle.Text == "" || boxPrice.Text == "") return;
+            if (!double.TryParse(boxPrice.Text, out double price))
+            {
+                MessageBox.Show("you input a eroor number");
                 return;
             }
-            var book = bookList[id-1];
-            seacrList.Add(book);
+            var title = boxTitle.Text;
+            var index = dataGridView1.CurrentRow.Index;
+            bookService.UpdateBook(index,title, price);
+            RefreshDataGridView();
+        }
+
+        private void BtnSearchBook_Click(object sender, EventArgs e)
+        {
+            if (boxSearch.Text == "")
+            {
+                RefreshDataGridView();
+                return;
+            }
+            if (!int.TryParse(boxSearch.Text, out int id))
+            {
+                MessageBox.Show("please input number");
+                return;
+            }
+            var book = bookService.SearcheBook(id);
             dataGridView1.DataSource = null;
-            dataGridView1.DataSource = seacrList;
+            dataGridView1.DataSource = new List<Books> { book }; ;
+            //RefreshDataGridView();
         }
         private Task _tcpTask;
 
         private CancellationTokenSource _cts;
-        private async void button6_Click(object sender, EventArgs e)
+        private void BtnTCPConect_Click(object sender, EventArgs e)
         {
             // 1. 检查有没有在跑，如果在跑，就发停止信号并退出。
-            if(_cts != null)
+            if (_cts != null)
             {
                 _cts.Cancel();
                 _cts.Dispose();
                 _cts = null;
-                button6.Text = "启动TCP连接";
+                BtnTCPConect.Text = "启动TCP连接";
                 return;
             }
             // 2. 如果没在跑，创建一个取消令牌，修改按钮文字。
             _cts = new();
             var token = _cts.Token;
-            button6.Text = "停止TCP连接";
+            BtnTCPConect.Text = "停止TCP连接";
             // 3. 开启后台 Task.Run：
             // 【这部分是脚手架，永远只管复制，绝不手敲】
             var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888);
-            Task.Run(async () =>
+            _tcpTask = Task.Run(async () =>
             {
-            while (!_cts.IsCancellationRequested)
-            {
-                try
+                while (!_cts.IsCancellationRequested)
                 {
-                    using (TcpClient tcpClient = new TcpClient())
+                    try
                     {
-                        await tcpClient.ConnectAsync(ipEndPoint);
-                        await using NetworkStream stream = tcpClient.GetStream();
-                        var buffer = new byte[1024];
-                        while (true)
+                        using (TcpClient tcpClient = new TcpClient())
                         {
-                            var received = await stream.ReadAsync(buffer,token);
-                            if (received == 0) break;
-
-                            var msg = Encoding.UTF8.GetString(buffer, 0, received);
-                            string[] parts = msg.Split(",");
-                            if (parts.Length == 2)
+                            await tcpClient.ConnectAsync(ipEndPoint);
+                            await using NetworkStream stream = tcpClient.GetStream();
+                            var buffer = new byte[1024];
+                            while (true)
                             {
-                                var title = parts[0];
-                                var price = double.Parse(parts[1]);
-                                var bookId = bookList.Max(b => b.bookId) + 1;
-                                var book = new Books { bookId = bookId, bookName = title, price = price };
-                                this.Invoke(new Action(() => {
-                                    bookList.Add(book);
-                                    dataGridView1.DataSource = null;
-                                    dataGridView1.DataSource = bookList;
-                                }));
+                                var received = await stream.ReadAsync(buffer, token);
+                                if (received == 0) break;
+
+                                var msg = Encoding.UTF8.GetString(buffer, 0, received);
+                                string[] parts = msg.Split(",");
+                                if (parts.Length == 2)
+                                {
+                                    var title = parts[0];
+                                    var price = double.Parse(parts[1]);
+                                    var bookId = bookService.GetBooks().Max(b => b.bookId) + 1;
+                                    var book = new Books { bookId = bookId, bookName = title, price = price };
+                                    this.Invoke(new Action(() =>
+                                    {
+                                        bookService.AddBook(book);
+                                        dataGridView1.DataSource = null;
+                                        dataGridView1.DataSource = bookService.GetBooks();
+                                    }));
                                 }
                             }
                         }
@@ -178,89 +176,7 @@ namespace Bookl_Manager_System
                     await Task.Delay(3000);
                 }
             });
-        
+
         }
-
-        /*while (true)
-        {
-
-            try
-            {
-                //先获得终结点
-                var ipAdress = IPAddress.Parse("127.0.0.1");
-                var ipEndPoint = new IPEndPoint(ipAdress, 8888);
-                //创建新的client
-                if (_tcpTask != null && !_tcpTask.IsCompleted)
-                {
-                    return;
-                }
-                using TcpClient tcpClient = new();
-                //然后连接终结点
-                await tcpClient.ConnectAsync(ipEndPoint);
-                //将连接建立流
-
-                await using NetworkStream stream = tcpClient.GetStream();
-                //读取流的信息存进buffer
-
-                var buffer = new byte[1024];
-                _tcpTask = Task.Run(async () =>
-                {
-                    while (true)
-                    {
-
-                        var received = await stream.ReadAsync(buffer);
-                        if (received == 0)
-                        {
-                            break;
-                        }
-                        //格式化流
-                        var msg = Encoding.UTF8.GetString(buffer, 0, received);
-                        MessageBox.Show(msg);
-                    }
-                });
-            }
-            catch (Exception)
-            {
-
-            }
-            await Task.Delay(3000);
-            if(tcpListener != null)
-            {
-                MessageBox.Show("TCP已连接，请不要重复连接");
-                return;
-            }
-            tcpListener =  new TcpListener(IPAddress.Any, 8888);
-            tcpListener.Start();
-            MessageBox.Show("you have a connected");
-            Task.Run(() => {
-                var client  = tcpListener.AcceptTcpClient();
-                MessageBox.Show("you have a accepted");
-                var stream = client.GetStream();
-                byte[] buffer = new byte[1024];
-                while (true)
-                {
-                    int len = stream.Read(buffer, 0, buffer.Length);
-                    if (len == 0) break;
-                    msg = Encoding.UTF8.GetString(buffer, 0, len);
-                    OnmsgReceived?.Invoke(msg);
-                }
-
-            }
-            );
-        }
-    }*/
-        public string msg;
-        public delegate string MsgHandler(string msg);
-        public event MsgHandler OnmsgReceived;
-
-
     }
-
-    public class Books
-    {
-        public int bookId { get; set; }
-        public string bookName { get; set; }
-        public double price { get; set; }
-    }
-
 }

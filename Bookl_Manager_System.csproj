@@ -18,6 +18,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Form1 窗体设计器元数据：让 VS 识别 Form1.cs 为可设计窗体（右键视图设计器） -->
+    <Compile Update="Form1.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="Form1.Designer.cs">
+      <DependentUpon>Form1.cs</DependentUpon>
+      <SubType>Form</SubType>
+    </Compile>
+    <EmbeddedResource Update="Form1.resx">
+      <DependentUpon>Form1.cs</DependentUpon>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- 保留 VS 设计器对 Resources.resx / Settings.settings 的代码生成关联 -->
     <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
