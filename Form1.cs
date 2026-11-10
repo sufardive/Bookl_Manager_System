@@ -127,9 +127,6 @@ namespace Bookl_Manager_System
             dataGridView1.DataSource = new List<Books> { book }; ;
             //RefreshDataGridView();
         }
-        private Task _tcpTask;
-
-        private CancellationTokenSource _cts;
         private async void BtnTCPConect_Click(object sender, EventArgs e)
         {
             try
