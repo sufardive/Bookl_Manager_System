@@ -19,6 +19,7 @@ namespace Bookl_Manager_System
     public partial class Form1 : Form
     {
         private BookService bookService = new BookService();
+        private TcpClientService tcpClientService = new();
         public string msg;
         public delegate string MsgHandler(string msg);
         public event MsgHandler OnmsgReceived;
@@ -27,6 +28,7 @@ namespace Bookl_Manager_System
         {
             InitializeComponent();
             OnmsgReceived += ShowReceived;
+            tcpClientService.BookReceived += TcpClientService_BookReceived;
             InitializeBooks();
             RefreshDataGridView();
         }
@@ -76,6 +78,14 @@ namespace Bookl_Manager_System
             RefreshDataGridView();
         }
 
+        public void TcpClientService_BookReceived(string title, double price) {
+            BeginInvoke(new Action(() =>
+            { 
+              var book = new Books{ bookName = title, price = price };
+                bookService.AddBook(book);
+                RefreshDataGridView() ;
+            }));
+        }
 
         private void BtnDeleteBook_Click(object sender, EventArgs e)
         {
@@ -95,8 +105,8 @@ namespace Bookl_Manager_System
                 return;
             }
             var title = boxTitle.Text;
-            var index = dataGridView1.CurrentRow.Index;
-            bookService.UpdateBook(index,title, price);
+            var book = dataGridView1.CurrentRow.DataBoundItem as Books; ;
+            bookService.UpdateBook(book.bookId, title, price);
             RefreshDataGridView();
         }
 
@@ -120,63 +130,25 @@ namespace Bookl_Manager_System
         private Task _tcpTask;
 
         private CancellationTokenSource _cts;
-        private void BtnTCPConect_Click(object sender, EventArgs e)
+        private async void BtnTCPConect_Click(object sender, EventArgs e)
         {
-            // 1. 检查有没有在跑，如果在跑，就发停止信号并退出。
-            if (_cts != null)
+            try
             {
-                _cts.Cancel();
-                _cts.Dispose();
-                _cts = null;
-                BtnTCPConect.Text = "启动TCP连接";
-                return;
-            }
-            // 2. 如果没在跑，创建一个取消令牌，修改按钮文字。
-            _cts = new();
-            var token = _cts.Token;
-            BtnTCPConect.Text = "停止TCP连接";
-            // 3. 开启后台 Task.Run：
-            // 【这部分是脚手架，永远只管复制，绝不手敲】
-            var ipEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 8888);
-            _tcpTask = Task.Run(async () =>
-            {
-                while (!_cts.IsCancellationRequested)
+                if (tcpClientService.IsStarted)
                 {
-                    try
-                    {
-                        using (TcpClient tcpClient = new TcpClient())
-                        {
-                            await tcpClient.ConnectAsync(ipEndPoint);
-                            await using NetworkStream stream = tcpClient.GetStream();
-                            var buffer = new byte[1024];
-                            while (true)
-                            {
-                                var received = await stream.ReadAsync(buffer, token);
-                                if (received == 0) break;
-
-                                var msg = Encoding.UTF8.GetString(buffer, 0, received);
-                                string[] parts = msg.Split(",");
-                                if (parts.Length == 2)
-                                {
-                                    var title = parts[0];
-                                    var price = double.Parse(parts[1]);
-                                    var bookId = bookService.GetBooks().Max(b => b.bookId) + 1;
-                                    var book = new Books { bookId = bookId, bookName = title, price = price };
-                                    this.Invoke(new Action(() =>
-                                    {
-                                        bookService.AddBook(book);
-                                        dataGridView1.DataSource = null;
-                                        dataGridView1.DataSource = bookService.GetBooks();
-                                    }));
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-                    await Task.Delay(3000);
+                    await tcpClientService.StopAsync();
+                    BtnTCPConect.Text = "启动TCP连接";
                 }
-            });
+                else
+                {
+                    tcpClientService.Start();
+                    BtnTCPConect.Text = "停止TCP连接";
+                }
+            }
+            catch
+            {
 
+            }
         }
     }
 }
