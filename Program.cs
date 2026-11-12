@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Bookl_Manager_System.Data;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,7 +18,11 @@ namespace Bookl_Manager_System
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Form1());
+            var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite("Data Source=library.db")
+            .Options;
+            Application.Run(new MainForm(contextOptions));
+            
         }
     }
 }

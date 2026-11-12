@@ -8,8 +8,8 @@ namespace Bookl_Manager_System.Models
 {
     public class Books
     {
-        public int bookId { get; set; }
-        public string bookName { get; set; }
-        public double price { get; set; }
+        public int Id { get; set; }
+        public string Title { get; set; }
+        public double Price { get; set; }
     }
 }

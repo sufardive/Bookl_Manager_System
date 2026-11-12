@@ -1,4 +1,6 @@
-﻿using Bookl_Manager_System.Models;
+﻿using Bookl_Manager_System.Data;
+using Bookl_Manager_System.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +12,12 @@ namespace Bookl_Manager_System.Services
     public class BookService
     {
         private readonly List<Books> bookList = [];
+        private readonly DbContextOptions<AppDbContext> _dbOptions;
+
+        public BookService(DbContextOptions<AppDbContext> options)
+        {
+            _dbOptions = options;
+        }
 
         public List<Books> GetBooks()
         {
@@ -24,16 +32,16 @@ namespace Bookl_Manager_System.Services
             }
             else
             {
-                id = bookList.Max(id =>  id.bookId)+1;
+                id = bookList.Max(id =>  id.Id)+1;
             }
-            book.bookId = id;
+            book.Id = id;
             bookList.Add(book);
 
         }
 
         public void RemoveBook(int id)
         {
-            var book = bookList.FirstOrDefault(b => b.bookId == id);
+            var book = bookList.FirstOrDefault(b => b.Id == id);
             if(book != null)
             {
                 bookList.Remove(book);
@@ -42,17 +50,17 @@ namespace Bookl_Manager_System.Services
 
         public void UpdateBook(int id,string name,double price)
         {
-            var book = bookList.FirstOrDefault(b => b.bookId == id);
+            var book = bookList.FirstOrDefault(b => b.Id == id);
             if (book != null)
             {
-                book.bookName = name;
-                book.price = price;
+                book.Title = name;
+                book.Price = price;
             }
         }
 
         public Books SearcheBook(int id)
         {
-            var book = bookList.FirstOrDefault(book => book.bookId == id);
+            var book = bookList.FirstOrDefault(book => book.Id == id);
             return book;
         }
     }

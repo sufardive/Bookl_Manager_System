@@ -13,21 +13,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Properties\Settings.Designer.cs 依赖 System.Configuration.ApplicationSettingsBase，
-         .NET 10 桌面框架已内置 System.Configuration.ConfigurationManager，无需额外的 PackageReference -->
-  </ItemGroup>
-
-  <ItemGroup>
     <!-- Form1 窗体设计器元数据：让 VS 识别 Form1.cs 为可设计窗体（右键视图设计器） -->
-    <Compile Update="Form1.cs">
+    <Compile Update="MainForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Update="Form1.Designer.cs">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <Compile Update="MainForm.Designer.cs">
+      <DependentUpon>MainForm.cs</DependentUpon>
       <SubType>Form</SubType>
     </Compile>
-    <EmbeddedResource Update="Form1.resx">
-      <DependentUpon>Form1.cs</DependentUpon>
+    <EmbeddedResource Update="MainForm.resx">
+      <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
   </ItemGroup>
 

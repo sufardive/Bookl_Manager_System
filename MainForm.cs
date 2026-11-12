@@ -1,4 +1,8 @@
-﻿using System;
+﻿using Bookl_Manager_System.Data;
+using Bookl_Manager_System.Models;
+using Bookl_Manager_System.Services;
+using Microsoft.EntityFrameworkCore;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -10,23 +14,23 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Bookl_Manager_System.Models;
-using Bookl_Manager_System.Services;
+using Bookl_Manager_System.Data;
 
 
 namespace Bookl_Manager_System
 {
-    public partial class Form1 : Form
+    public partial class MainForm : Form
     {
-        private BookService bookService = new BookService();
+        private BookService bookService;
         private TcpClientService tcpClientService = new();
         public string msg;
         public delegate string MsgHandler(string msg);
         public event MsgHandler OnmsgReceived;
 
-        public Form1()
+        public MainForm(DbContextOptions<AppDbContext> contextOptions)
         {
             InitializeComponent();
+            bookService = new BookService(contextOptions);
             OnmsgReceived += ShowReceived;
             tcpClientService.BookReceived += TcpClientService_BookReceived;
             InitializeBooks();
@@ -42,20 +46,20 @@ namespace Bookl_Manager_System
         {
             bookService.AddBook(new Books
             {
-                bookName = "C#图解教程",
-                price = 35.2
+                Title = "C#图解教程",
+                Price = 35.2
             });
 
             bookService.AddBook(new Books
             {
-                bookName = "Sql必知必会",
-                price = 37.1
+                Title = "Sql必知必会",
+                Price = 37.1
             });
 
             bookService.AddBook(new Books
             {
-                bookName = "深入理解计算机系统",
-                price = 99.0
+                Title = "深入理解计算机系统",
+                Price = 99.0
             });
         }
 
@@ -72,8 +76,8 @@ namespace Bookl_Manager_System
         {
             var book = new Books();
             if (boxTitle.Text == "" || boxPrice.Text == "") return;
-            book.bookName = boxTitle.Text;
-            book.price = Convert.ToDouble(boxPrice.Text);
+            book.Title = boxTitle.Text;
+            book.Price = Convert.ToDouble(boxPrice.Text);
             bookService.AddBook(book);
             RefreshDataGridView();
         }
@@ -81,7 +85,7 @@ namespace Bookl_Manager_System
         public void TcpClientService_BookReceived(string title, double price) {
             BeginInvoke(new Action(() =>
             { 
-              var book = new Books{ bookName = title, price = price };
+              var book = new Books{ Title = title, Price = price };
                 bookService.AddBook(book);
                 RefreshDataGridView() ;
             }));
@@ -91,7 +95,7 @@ namespace Bookl_Manager_System
         {
             if (bookService.GetBooks().Count == 0) return;
             var book = dataGridView1.CurrentRow.DataBoundItem as Books;
-            int id = book.bookId;
+            int id = book.Id;
             bookService.RemoveBook(id);
             RefreshDataGridView();
         }
@@ -106,7 +110,7 @@ namespace Bookl_Manager_System
             }
             var title = boxTitle.Text;
             var book = dataGridView1.CurrentRow.DataBoundItem as Books; ;
-            bookService.UpdateBook(book.bookId, title, price);
+            bookService.UpdateBook(book.Id, title, price);
             RefreshDataGridView();
         }
 
