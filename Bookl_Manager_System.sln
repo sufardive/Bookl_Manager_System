@@ -1,9 +1,14 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.14.36811.4 d17.14
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Bookl_Manager_System", "Bookl_Manager_System.csproj", "{436081F1-4A65-499B-B1D8-75F2E873BAE3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{B2C1D4E5-6F70-4A8B-9C0D-1E2F3A4B5C6D}"
+	ProjectSection(SolutionItems) = preProject
+		docs\开发计划.md = docs\开发计划.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
