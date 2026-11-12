@@ -33,29 +33,7 @@ namespace Bookl_Manager_System
 
         private async void MainForm_Load(object sender, EventArgs e)
         {
-            await InitializeBooks();
             await RefreshDataGridView();
-        }
-
-        public async Task InitializeBooks()
-        {
-            await bookService.AddBook(new Books
-            {
-                Title = "C#图解教程",
-                Price = 35.2
-            });
-
-            await bookService.AddBook(new Books
-            {
-                Title = "Sql必知必会",
-                Price = 37.1
-            });
-
-            await bookService.AddBook(new Books
-            {
-                Title = "深入理解计算机系统",
-                Price = 99.0
-            });
         }
 
         public async Task RefreshDataGridView()
