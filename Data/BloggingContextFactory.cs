@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore.Design;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,8 +13,11 @@ namespace Bookl_Manager_System.Data
     {
         public AppDbContext CreateDbContext(string[] args)
         {
+
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            optionsBuilder.UseSqlite("Data Source=library.db");
+            string dbPath = Path.Combine(Path.GetDirectoryName(typeof(AppDbContext).Assembly.Location), "library.db");
+
+            optionsBuilder.UseSqlite($"Data Source={dbPath}");
 
             return new AppDbContext(optionsBuilder.Options);
         }

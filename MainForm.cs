@@ -14,93 +14,89 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Bookl_Manager_System.Data;
 
 
 namespace Bookl_Manager_System
 {
     public partial class MainForm : Form
     {
-        private BookService bookService;
-        private TcpClientService tcpClientService = new();
-        public string msg;
-        public delegate string MsgHandler(string msg);
-        public event MsgHandler OnmsgReceived;
+        private readonly BookService bookService;
+        private readonly TcpClientService tcpClientService = new();
 
         public MainForm(DbContextOptions<AppDbContext> contextOptions)
         {
             InitializeComponent();
             bookService = new BookService(contextOptions);
-            OnmsgReceived += ShowReceived;
             tcpClientService.BookReceived += TcpClientService_BookReceived;
-            InitializeBooks();
-            RefreshDataGridView();
-        }
-        public string ShowReceived(string msg)
-        {
-            MessageBox.Show(msg);
-            return "";
+            this.Load += MainForm_Load;
         }
 
-        public void InitializeBooks()
+        private async void MainForm_Load(object sender, EventArgs e)
         {
-            bookService.AddBook(new Books
+            await InitializeBooks();
+            await RefreshDataGridView();
+        }
+
+        public async Task InitializeBooks()
+        {
+            await bookService.AddBook(new Books
             {
                 Title = "C#图解教程",
                 Price = 35.2
             });
 
-            bookService.AddBook(new Books
+            await bookService.AddBook(new Books
             {
                 Title = "Sql必知必会",
                 Price = 37.1
             });
 
-            bookService.AddBook(new Books
+            await bookService.AddBook(new Books
             {
                 Title = "深入理解计算机系统",
                 Price = 99.0
             });
         }
 
-        public void RefreshDataGridView()
+        public async Task RefreshDataGridView()
         {
-            var bookList = bookService.GetBooks();
+            var bookList = await bookService.GetBooks();
             // 启动时直接显示在表格上
             dataGridView1.DataSource = null;
             dataGridView1.DataSource = bookList;
         }
 
 
-        private void BtnAddBook_Click(object sender, EventArgs e)
+        private async void BtnAddBook_Click(object sender, EventArgs e)
         {
             var book = new Books();
             if (boxTitle.Text == "" || boxPrice.Text == "") return;
             book.Title = boxTitle.Text;
             book.Price = Convert.ToDouble(boxPrice.Text);
-            bookService.AddBook(book);
-            RefreshDataGridView();
+            await bookService.AddBook(book);
+            await RefreshDataGridView();
         }
 
         public void TcpClientService_BookReceived(string title, double price) {
-            BeginInvoke(new Action(() =>
+            BeginInvoke(new Action(async() =>
             { 
               var book = new Books{ Title = title, Price = price };
-                bookService.AddBook(book);
-                RefreshDataGridView() ;
+                await bookService.AddBook(book);
+                await RefreshDataGridView();
             }));
         }
 
-        private void BtnDeleteBook_Click(object sender, EventArgs e)
+        private async void BtnDeleteBook_Click(object sender, EventArgs e)
         {
-            if (bookService.GetBooks().Count == 0) return;
+            List<Books> Books =await bookService.GetBooks();
+            if (Books.Count == 0) return;
             var book = dataGridView1.CurrentRow.DataBoundItem as Books;
             int id = book.Id;
-            bookService.RemoveBook(id);
-            RefreshDataGridView();
+            await bookService.RemoveBook(id);
+            await RefreshDataGridView();
         }
 
-        private void BtnUpdateBook_Click(object sender, EventArgs e)
+        private async void BtnUpdateBook_Click(object sender, EventArgs e)
         {
             if (boxTitle.Text == "" || boxPrice.Text == "") return;
             if (!double.TryParse(boxPrice.Text, out double price))
@@ -110,15 +106,15 @@ namespace Bookl_Manager_System
             }
             var title = boxTitle.Text;
             var book = dataGridView1.CurrentRow.DataBoundItem as Books; ;
-            bookService.UpdateBook(book.Id, title, price);
-            RefreshDataGridView();
+            await bookService.UpdateBook(book.Id, title, price);
+            await RefreshDataGridView();
         }
 
-        private void BtnSearchBook_Click(object sender, EventArgs e)
+        private async void BtnSearchBook_Click(object sender, EventArgs e)
         {
             if (boxSearch.Text == "")
             {
-                RefreshDataGridView();
+                await RefreshDataGridView();
                 return;
             }
             if (!int.TryParse(boxSearch.Text, out int id))
@@ -126,7 +122,7 @@ namespace Bookl_Manager_System
                 MessageBox.Show("please input number");
                 return;
             }
-            var book = bookService.SearcheBook(id);
+            var book = await bookService.SearcheBook(id);
             dataGridView1.DataSource = null;
             dataGridView1.DataSource = new List<Books> { book }; ;
             //RefreshDataGridView();

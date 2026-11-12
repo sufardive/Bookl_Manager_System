@@ -19,49 +19,53 @@ namespace Bookl_Manager_System.Services
             _dbOptions = options;
         }
 
-        public List<Books> GetBooks()
+        public async Task<List<Books>> GetBooks()
         {
-            return bookList;
-        }
-
-        public void AddBook(Books book) {
-            int id;
-            if(bookList.Count == 0)
+            using (var context = new AppDbContext(_dbOptions))
             {
-                id = 0;
-            }
-            else
-            {
-                id = bookList.Max(id =>  id.Id)+1;
-            }
-            book.Id = id;
-            bookList.Add(book);
-
-        }
-
-        public void RemoveBook(int id)
-        {
-            var book = bookList.FirstOrDefault(b => b.Id == id);
-            if(book != null)
-            {
-                bookList.Remove(book);
+                return await context.Books.ToListAsync();
             }
         }
 
-        public void UpdateBook(int id,string name,double price)
-        {
-            var book = bookList.FirstOrDefault(b => b.Id == id);
-            if (book != null)
+        public async Task AddBook(Books book) {
+            using (var context = new AppDbContext(_dbOptions))
             {
-                book.Title = name;
-                book.Price = price;
+                context.Books.Add(book);
+                await context.SaveChangesAsync();
             }
         }
 
-        public Books SearcheBook(int id)
+        public async Task RemoveBook(int id)
         {
-            var book = bookList.FirstOrDefault(book => book.Id == id);
-            return book;
+            using (var context = new AppDbContext(_dbOptions))
+            {
+                var blog = await context.Books.SingleOrDefaultAsync(b => b.Id == id);
+                context.Books.Remove(blog);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task UpdateBook(int id,string name,double price)
+        {
+            using (var context = new AppDbContext(_dbOptions))
+            {
+                var blog = await context.Books.SingleOrDefaultAsync(b => b.Id == id);
+                if (blog == null) return;
+                blog.Title = name;
+                blog.Price = price;
+                await context.SaveChangesAsync();
+            }
+        }
+
+        public async Task<Books> SearcheBook(int id)
+        {
+            using (var context = new AppDbContext(_dbOptions))
+            {
+                var blog = await context.Books.SingleOrDefaultAsync(b => b.Id == id);
+                if (blog == null) return null;
+                return blog;
+            }
+            
         }
     }
 }

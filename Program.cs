@@ -1,9 +1,7 @@
 ﻿using Bookl_Manager_System.Data;
 using Microsoft.EntityFrameworkCore;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.IO;
 using System.Windows.Forms;
 
 namespace Bookl_Manager_System
@@ -18,8 +16,9 @@ namespace Bookl_Manager_System
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+            string dbPath = Path.Combine(Path.GetDirectoryName(typeof(AppDbContext).Assembly.Location), "library.db");
             var contextOptions = new DbContextOptionsBuilder<AppDbContext>()
-            .UseSqlite("Data Source=library.db")
+            .UseSqlite($"Data Source={dbPath}")
             .Options;
             Application.Run(new MainForm(contextOptions));
             
