@@ -11,5 +11,7 @@ namespace Bookl_Manager_System.Models
         public int Id { get; set; }
         public string Title { get; set; }
         public double Price { get; set; }
+        public int TotalStock { get; set; }
+        public int AvailableStock { get; set; }
     }
 }
