@@ -11,7 +11,6 @@ namespace Bookl_Manager_System.Services
 {
     public class BookService
     {
-        private readonly List<Books> bookList = [];
         private readonly DbContextOptions<AppDbContext> _dbOptions;
 
         public BookService(DbContextOptions<AppDbContext> options)
