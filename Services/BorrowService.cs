@@ -20,46 +20,60 @@ namespace Bookl_Manager_System.Services
             _dbOptions = options;
         }
 
-        public async Task BorrowBook(int studentid, int bookid, int number, DateTime duetime)
+        public async Task<BorrowBookResult> BorrowBook(int studentid, DateTime duetime, List<BorrowItemRequest> borrows)
         {
             using (var context = new AppDbContext(_dbOptions))
             {
                 var sid = await context.Students.AnyAsync(s => s.Id == studentid);
-                var bid = await context.Books.AnyAsync(book => book.Id == bookid);
-                if (!sid || !bid)
+                if (!sid)
                 {
-                    MessageBox.Show("学生或者书籍不存在");
-                    return;
+                    return BorrowBookResult.StudentNotFound;
                 }
-                var book = await context.Books.FirstOrDefaultAsync(b => b.Id == bookid);
-                int availbook = book.AvailableStock;
-                if (number > availbook || number <= 0)
+                if (borrows == null || borrows.Count == 0)
                 {
-                    MessageBox.Show("借阅数量异常");
-                    return;
+                    return BorrowBookResult.EmptyBorrowList;
                 }
-                var borrowOrder = new BorrowOrders
+                var b = new BorrowOrders()
                 {
                     StudentId = studentid,
                     BorrowTime = DateTime.Now,
                     DueTime = duetime
                 };
-                context.BorrowOrders.Add(borrowOrder);
                 await using var transaction = await context.Database.BeginTransactionAsync();
+                context.BorrowOrders.Add(b);
                 await context.SaveChangesAsync();
-                var borrowOrderItem = new BorrowOrderItems
+
+                foreach (var item in borrows)
                 {
-                    BorrowOrderId = borrowOrder.Id,
-                    BookId = bookid,
-                    Quantity = number
-                };
-                book.AvailableStock -= number;
-                context.BorrowOrderItems.Add(borrowOrderItem);
+                    var book = await context.Books.FirstOrDefaultAsync(b => b.Id == item.BookId);
+                    if (book == null)
+                    {
+                        return BorrowBookResult.BookNotFound;
+                    }
+                    int availbook = book.AvailableStock;
+                    if (item.Quantity <= 0)
+                    {
+                        return BorrowBookResult.InvalidQuantity;
+                    }
+
+                    if (item.Quantity > availbook)
+                    {
+                        return BorrowBookResult.InsufficientStock;
+                    }
+                    var O = new BorrowOrderItems
+                    {
+                        BorrowOrderId = b.Id,
+                        BookId = book.Id,
+                        Quantity = item.Quantity
+                    };
+                    context.BorrowOrderItems.Add(O);
+                    book.AvailableStock -= item.Quantity;
+                }
                 await context.SaveChangesAsync();
                 await transaction.CommitAsync();
-                return;
             }
-        }
+                return BorrowBookResult.Success;
+            }
 
         public async Task ReturnBook(int BorrowOrderId)
         {
