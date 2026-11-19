@@ -24,8 +24,8 @@ namespace Bookl_Manager_System.Services
         {
             using (var context = new AppDbContext(_dbOptions))
             {
-                var sid =await context.Students.AnyAsync(s => s.Id == studentid);
-                var bid =await  context.Books.AnyAsync(book => book.Id == bookid);
+                var sid = await context.Students.AnyAsync(s => s.Id == studentid);
+                var bid = await context.Books.AnyAsync(book => book.Id == bookid);
                 if (!sid || !bid)
                 {
                     MessageBox.Show("学生或者书籍不存在");
@@ -33,7 +33,7 @@ namespace Bookl_Manager_System.Services
                 }
                 var book = await context.Books.FirstOrDefaultAsync(b => b.Id == bookid);
                 int availbook = book.AvailableStock;
-                if(number > availbook || number <= 0)
+                if (number > availbook || number <= 0)
                 {
                     MessageBox.Show("借阅数量异常");
                     return;
@@ -70,7 +70,7 @@ namespace Bookl_Manager_System.Services
                 {
                     return;
                 }
-                if(borrowOrder.ReturnTime != null)
+                if (borrowOrder.ReturnTime != null)
                 {
                     return;
                 }
@@ -116,32 +116,75 @@ namespace Bookl_Manager_System.Services
         {
             using (var context = new AppDbContext(_dbOptions))
             {
-                var borrowList = await context.BorrowOrderItems
-                    .Where(s => s.BookId == bookId)
-                    .ToListAsync ();
-                var historyList = new List<BookBorrowHistoryDto>();
-                foreach (var item in borrowList) {
-                    var borroworder = await context.BorrowOrders.FirstOrDefaultAsync(b => b.Id == item.BorrowOrderId);
-                    var student = await context.Students.FirstOrDefaultAsync(s => s.Id == borroworder.StudentId);
-                    var his = new BookBorrowHistoryDto
+                var historyList = await context.BorrowOrderItems
+                    .Where(b => b.BookId == bookId)
+                    .Join(
+                    context.BorrowOrders,
+                    b => b.BorrowOrderId,
+                    order => order.Id,
+                    (item, order) => new { Item = item, Order = order }
+                    )
+                    .Join(
+                    context.Students,
+                    borrow => borrow.Order.StudentId,
+                    student => student.Id,
+                    (borrow, student) => new BookBorrowHistoryDto
                     {
                         StudentName = student.Name,
-                        BorrowTime = borroworder.BorrowTime,
-                        DueTime = borroworder.DueTime,
-                        ReturnTime = borroworder.ReturnTime,
-                        Quantity = item.Quantity
-                    };
-                    historyList.Add(his);
-                }
+                        BorrowTime = borrow.Order.BorrowTime,
+                        DueTime = borrow.Order.DueTime,
+                        ReturnTime = borrow.Order.ReturnTime,
+                        Quantity = borrow.Item.Quantity
+                    })
+                    .OrderBy(h => h.BorrowTime)
+                    .ToListAsync();
                 return historyList;
-            };
+            }
+            ;
         }
-        public async Task<List<BorrowOrders>> GetStudentBorrowingHistory(int studentId)
+        public async Task<List<StudentBorrowHistoryDto>> GetStudentBorrowingHistory(int studentId)
         {
             using (var context = new AppDbContext(_dbOptions))
             {
-                return;
-            };
+                var StuBorrowHis = await context.Students
+                    .Where(b => b.Id == studentId)
+                    .Join(
+                    context.BorrowOrders,
+                    student => student.Id,
+                    order => order.StudentId,
+                    (student, order) => new
+                    {
+                        Student = student,
+                        Order = order
+                    })
+                    .Join(
+                    context.BorrowOrderItems,
+                    order => order.Order.Id,
+                    borrow => borrow.BorrowOrderId,
+                    (Stu, borrow) => new
+                    {
+                        Student = Stu.Student,
+                        Order = Stu.Order,
+                        Borrow = borrow
+                    })
+                    .Join(
+                    context.Books,
+                    item => item.Borrow.BookId,
+                    book => book.Id,
+                    (Borrow, book) => new StudentBorrowHistoryDto
+                    {
+                        StudentId = Borrow.Student.Id,
+                        StudentName = Borrow.Student.Name,
+                        BookTitle = book.Title,
+                        Quantity = Borrow.Borrow.Quantity,
+                        BorrowTime = Borrow.Order.BorrowTime,
+                        DueTime = Borrow.Order.DueTime,
+                        ReturnTime = Borrow.Order.ReturnTime,
+                    })
+                    .OrderBy(h => h.BorrowTime)
+                    .ToListAsync();
+                return StuBorrowHis;
+            }
         }
     }
-}
+};
